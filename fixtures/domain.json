@@ -1,7 +1,7 @@
 {
   "domain": "plateau-greenhouse-plan",
-  "version": 1,
-  "sample_id": "092201-013",
+  "version": 2,
+  "sample_id": "092601-014",
   "record_types": [
     "温室棚区",
     "作物季次",
@@ -19,14 +19,187 @@
     "已交付"
   ],
   "facts": [
-    "村庄建设日光节能温室和高山区滴灌工程",
+    "村庄海拔约1400米，新建近百座日光节能温室并配套高山区滴灌工程",
+    "外省技术员给出的水肥基线方案需要按逐棚土壤检测结果适配",
     "技术团队会根据土壤差异调整有机肥和生物制剂",
+    "工人与滴灌设备数量有限，水肥、植保、采收班次经常在同一计划窗口撞期",
+    "园区以作物季次为单位组织土壤检测、育苗、植保、水肥配方、班次与采收订单",
     "园区同时组织种植、采摘和冷链运输"
   ],
+  "planning": {
+    "unit": "作物季次",
+    "organize_around": ["温室棚区", "作物批次"],
+    "modules": ["土壤检测", "育苗", "植保", "水肥配方", "班次排程", "采收订单"],
+    "horizon_days": 7,
+    "note": "排程以季次为边界建账，棚区与作物批次是贯穿各模块的两条主线"
+  },
+  "guidance_rules": {
+    "expert_plan": {
+      "label": "专家/外来方案",
+      "required_field": "适用条件",
+      "requirement": "必须注明适用的土壤、作物物候期与环境条件，不满足条件不得直接套用",
+      "example": "TF-A v2：pH 6.0–6.8、EC 1.5–2.2 mS/cm、根温≥14℃、缓苗结束后适用"
+    },
+    "field_adjustment": {
+      "label": "现场调整",
+      "required_field": "观察依据",
+      "requirement": "必须写明观察到的长势/基质/环境现象及观察时间，再记录调整动作",
+      "example": "2026-09-24 午后上部叶片萎蔫、基质表面返盐(EC 2.6)，滴灌间隔由1天延长至2天并加大单次灌量"
+    }
+  },
+  "reschedule_events": [
+    {
+      "code": "disease",
+      "label": "病害",
+      "cascade": "发病棚区转入需干预，植保任务前置，同区水肥与采收任务暂停或重排，相邻棚区加密巡查"
+    },
+    {
+      "code": "equipment_downtime",
+      "label": "设备停机",
+      "cascade": "占用该滴灌机组/管路的水肥任务按维修窗口改期，改期任务重新参与工人与台班冲突校验"
+    },
+    {
+      "code": "formula_correction",
+      "label": "配方更正",
+      "cascade": "生成方案新版本，未执行的水肥/植保任务按新版本重算，已执行记录保留旧版本号不变"
+    },
+    {
+      "code": "seedling_transfer",
+      "label": "跨棚调苗",
+      "cascade": "调出与调入棚区的定植计划、株数档案和后续植保/水肥任务同步改写"
+    },
+    {
+      "code": "delayed_harvest",
+      "label": "延迟采收",
+      "cascade": "采收订单与班次顺延，关联棚区停水停肥时间与冷链车次重新匹配"
+    },
+    {
+      "code": "cold_chain_change",
+      "label": "冷链能力变化",
+      "cascade": "按新的冷藏/车次运力反推可采收量，采收订单与班次任务随之重算"
+    }
+  ],
+  "offline_record": {
+    "fields": ["occurred_at", "synced_at"],
+    "occurred_at_desc": "田间事件真实发生时间，由操作人在现场记录",
+    "synced_at_desc": "设备联网后的数据同步时间",
+    "rule": "联网补录的记录一律按 occurred_at 落位到排程与履历，不得因 synced_at 改写真实发生时间；同步迟到导致的计划冲突标记为补录冲突并触发重算"
+  },
+  "resources": {
+    "constrained_resources": ["工人", "滴灌设备"],
+    "gap_lookahead_days": 3,
+    "gap_entry_fields": ["日期", "资源", "需求量", "可用量", "缺口", "冲突任务"],
+    "views": {
+      "生产经理": "提前看到未来数日的工人工时与滴灌台班缺口及冲突任务清单",
+      "农技人员": "把当日方案与棚区实际长势、现场调整逐条对照"
+    }
+  },
+  "traceability": {
+    "anchor": "采收批次",
+    "chain": [
+      "装箱产品",
+      "采收批次",
+      "棚区",
+      "作物批次",
+      "投入品批次（有机肥/生物制剂/肥料）",
+      "田间操作及操作人",
+      "农技方案版本"
+    ],
+    "recipe_versioning": {
+      "rule": "水肥与植保方案按版本留存，配方更正只追加新版本，不覆盖旧版本",
+      "execution_record": "每次田间操作记录当时实际执行的方案版本号"
+    }
+  },
   "sample": {
+    "site": {
+      "name": "高原某村温室园区（虚构）",
+      "altitude_m": 1420,
+      "greenhouse_count": 96,
+      "irrigation_zones": ["滴灌一区", "滴灌二区", "滴灌三区"]
+    },
     "greenhouse": "GH-027",
-    "crop": "番茄样例",
-    "soil_issue": "透气性偏低",
-    "irrigation_zone": "滴灌三区"
+    "irrigation_zone": "滴灌三区",
+    "crop_batch": {
+      "id": "2026A-TOM-GH027",
+      "crop": "番茄",
+      "season": "2026年秋茬",
+      "state": "生长中",
+      "planted_on": "2026-09-02"
+    },
+    "soil_test": {
+      "id": "SOIL-027-20260918",
+      "sampled_on": "2026-09-18",
+      "ph": 7.1,
+      "ec_ms_cm": 1.4,
+      "organic_matter_pct": 1.8,
+      "finding": "透气性偏低、pH偏高，需在专家基线上做逐棚适配"
+    },
+    "expert_plan_adapted": {
+      "code": "TF-A",
+      "version": 2,
+      "source": "外省技术员基线方案 TF-A v1 经逐棚适配",
+      "applicability": "GH-027 土壤 pH 6.8–7.2、EC 1.2–2.0 mS/cm、根温≥14℃、第一穗果坐果前",
+      "adapted_on": "2026-09-20"
+    },
+    "field_adjustment": {
+      "id": "ADJ-027-20260924",
+      "observed_at": "2026-09-24T15:30:00+08:00",
+      "observation_basis": "上部叶片午后萎蔫、基质表面返盐，实测基质 EC 2.6 mS/cm",
+      "action": "滴灌间隔由1天延长至2天，单次灌量提高20%，3天后复测EC",
+      "operator_id": "W-07"
+    },
+    "formula_correction": {
+      "event": "formula_correction",
+      "new_version": "TF-A v3",
+      "issued_at": "2026-09-25T10:00:00+08:00",
+      "change": "根据GH-027等8棚返盐观察下调氮源比例",
+      "recalculated_tasks": ["FERT-GH025..032-0926", "FERT-GH027-0927"],
+      "unchanged": "09-25之前已执行的操作仍标注 TF-A v2"
+    },
+    "equipment_downtime": {
+      "event": "equipment_downtime",
+      "asset": "滴灌三区加压泵 P3",
+      "from": "2026-09-25T18:00:00+08:00",
+      "repair_done_eta": "2026-09-26T18:00:00+08:00",
+      "cascade": "三区9月26日早班水肥任务并入9月27日窗口，与采收班次重新校验工人与台班冲突"
+    },
+    "offline_operation": {
+      "id": "OPS-027-20260925-PM",
+      "task": "叶面植保巡查与标记",
+      "occurred_at": "2026-09-25T16:40:00+08:00",
+      "synced_at": "2026-09-26T08:10:00+08:00",
+      "note": "棚区无信号离线记录，联网后按发生时间落位",
+      "operator_id": "W-07"
+    },
+    "resource_gap": [
+      {
+        "date": "2026-09-28",
+        "resource": "工人",
+        "demand_workdays": 14,
+        "available_workdays": 10,
+        "gap": 4,
+        "conflicting_tasks": ["GH-025~032水肥追施", "GH-027~030采收", "GH-020整枝"]
+      },
+      {
+        "date": "2026-09-28",
+        "resource": "滴灌设备",
+        "demand_shifts": 6,
+        "available_shifts": 4,
+        "gap": 2,
+        "conflicting_tasks": ["滴灌一区09-28早晚班", "滴灌三区改期水肥", "滴灌二区例行灌溉"]
+      }
+    ],
+    "harvest_lot": {
+      "lot_id": "LOT-20260926-GH027-A",
+      "product": "箱装番茄（12kg/箱，80箱）",
+      "harvested_at": "2026-09-26T07:30:00+08:00",
+      "greenhouse": "GH-027",
+      "crop_batch_id": "2026A-TOM-GH027",
+      "input_lots": ["有机肥 LOT-F-20260830-03", "生物制剂 LOT-B-20260905-11", "复合肥 LOT-N-20260912-02"],
+      "operations": ["OPS-027-20260925-PM"],
+      "operators": ["W-07", "W-12"],
+      "plan_version_executed": "TF-A v3",
+      "cold_chain": "冷藏车 CC-02 当日09:30窗口"
+    }
   }
 }

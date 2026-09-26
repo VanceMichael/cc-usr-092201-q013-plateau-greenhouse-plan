@@ -9,6 +9,12 @@
     "record_types",
     "workflow_states",
     "facts",
+    "planning",
+    "guidance_rules",
+    "reschedule_events",
+    "offline_record",
+    "resources",
+    "traceability",
     "sample"
   ],
   "properties": {
@@ -17,7 +23,7 @@
     },
     "version": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 2
     },
     "sample_id": {
       "type": "string",
@@ -25,7 +31,10 @@
     },
     "record_types": {
       "type": "array",
-      "minItems": 3,
+      "minItems": 6,
+      "contains": {
+        "enum": ["作物季次", "水肥配方"]
+      },
       "items": {
         "type": "string"
       }
@@ -44,10 +53,266 @@
         "type": "string"
       }
     },
+    "planning": {
+      "type": "object",
+      "required": ["unit", "organize_around", "modules", "horizon_days"],
+      "properties": {
+        "unit": {
+          "const": "作物季次"
+        },
+        "organize_around": {
+          "type": "array",
+          "contains": {
+            "enum": ["温室棚区", "作物批次"]
+          },
+          "items": {
+            "type": "string"
+          }
+        },
+        "modules": {
+          "type": "array",
+          "allOf": [
+            {
+              "contains": {
+                "const": "土壤检测"
+              }
+            },
+            {
+              "contains": {
+                "const": "水肥配方"
+              }
+            },
+            {
+              "contains": {
+                "const": "班次排程"
+              }
+            },
+            {
+              "contains": {
+                "const": "采收订单"
+              }
+            }
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "horizon_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "guidance_rules": {
+      "type": "object",
+      "required": ["expert_plan", "field_adjustment"],
+      "properties": {
+        "expert_plan": {
+          "$ref": "#/$defs/guidanceRule"
+        },
+        "field_adjustment": {
+          "$ref": "#/$defs/guidanceRule"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reschedule_events": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["code", "label", "cascade"],
+        "properties": {
+          "code": {
+            "enum": [
+              "disease",
+              "equipment_downtime",
+              "formula_correction",
+              "seedling_transfer",
+              "delayed_harvest",
+              "cold_chain_change"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cascade": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "offline_record": {
+      "type": "object",
+      "required": ["fields", "rule"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "allOf": [
+            {
+              "contains": {
+                "const": "occurred_at"
+              }
+            },
+            {
+              "contains": {
+                "const": "synced_at"
+              }
+            }
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "occurred_at_desc": {
+          "type": "string"
+        },
+        "synced_at_desc": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "object",
+      "required": ["constrained_resources", "gap_lookahead_days", "views"],
+      "properties": {
+        "constrained_resources": {
+          "type": "array",
+          "allOf": [
+            {
+              "contains": {
+                "const": "工人"
+              }
+            },
+            {
+              "contains": {
+                "const": "滴灌设备"
+              }
+            }
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "gap_lookahead_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gap_entry_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "views": {
+          "type": "object",
+          "properties": {
+            "生产经理": {
+              "type": "string"
+            },
+            "农技人员": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "traceability": {
+      "type": "object",
+      "required": ["anchor", "chain", "recipe_versioning"],
+      "properties": {
+        "anchor": {
+          "const": "采收批次"
+        },
+        "chain": {
+          "type": "array",
+          "allOf": [
+            {
+              "contains": {
+                "const": "装箱产品"
+              }
+            },
+            {
+              "contains": {
+                "const": "采收批次"
+              }
+            },
+            {
+              "contains": {
+                "const": "棚区"
+              }
+            },
+            {
+              "contains": {
+                "const": "田间操作及操作人"
+              }
+            },
+            {
+              "contains": {
+                "const": "农技方案版本"
+              }
+            }
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "recipe_versioning": {
+          "type": "object",
+          "required": ["rule", "execution_record"],
+          "properties": {
+            "rule": {
+              "type": "string"
+            },
+            "execution_record": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "sample": {
       "type": "object",
       "minProperties": 3
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "guidanceRule": {
+      "type": "object",
+      "required": ["label", "required_field", "requirement"],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "required_field": {
+          "type": "string"
+        },
+        "requirement": {
+          "type": "string"
+        },
+        "example": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }
